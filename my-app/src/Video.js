@@ -105,31 +105,58 @@ const Video = ({
 }) => {
     const videoRef = useRef();
     const [playStatus, setPlayStatus] = useState(false);
+    const [mouseIn, setMouseIn] = useState(false);
+    const [mouseMove, setmouseMove] = useState(0);
     const [controlShow, setControlShow] = useState(true);
+    const [actTimeout, setActTimeout] = useState(null);
 
     useEffect(() => {
         if (playStatus && (videoRef.current.paused || videoRef.current.ended)) videoRef.current.play();
-        else videoRef.current.pause();
+        else {
+            videoRef.current.pause();
+            setControlShow(true);
+        }
     }, [playStatus, setPlayStatus])
+
+    useEffect(() => {
+        if(actTimeout) {
+            clearTimeout(actTimeout);
+        }
+        setActTimeout(setTimeout(() => {
+            if(playStatus) {
+                setControlShow(false);
+            }
+        }, 2000));
+    }, [playStatus, mouseIn, mouseMove])
     
     const handleSwitchButton = (e) => {
-        setPlayStatus(!playStatus)
+        setPlayStatus(!playStatus);
     }
     
     const handleMouseEnterVideoFrame = (e) => {
+        setMouseIn(true);
         if(!controlShow) {
-            setControlShow(true)
+            setControlShow(true);
         }
     }
     
     const handleMouseMoveVideoFrame = (e) => {
-        
+        setmouseMove(mouseMove + 1);
+        if(!controlShow) {
+            setControlShow(true);
+        }
     }
     
     const handleMouseLeaveVideoFrame = (e) => {
+        setMouseIn(false);
+        setmouseMove(0)
         if(controlShow && !videoRef.current.paused && !videoRef.current.ended) {
-            setControlShow(false)
+            setControlShow(false);
         }
+    }
+
+    const handleVideoEnded = (e) => {
+        setPlayStatus(false);
     }
 
     return (
@@ -145,6 +172,7 @@ const Video = ({
             <video
                 ref={videoRef}
                 playsInline
+                onEnded={handleVideoEnded}
             >
                 <source src={src} type="video/mp4" />
                 Your browser does not support HTML video.
