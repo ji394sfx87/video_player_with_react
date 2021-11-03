@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import Video from "./Video";
 
 const VideoPlayer = styled.div`
   position: relative;
@@ -20,23 +21,13 @@ const VideoContainer = styled.div`
   max-width: 100%;
   max-height: 100%;
   background-color: #000;
-
-  video {
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-  }
 `
 
 function App() {
   return (
     <VideoPlayer>
       <VideoContainer>
-        <video controls>
-          <source src="/example.mp4" type="video/mp4" />
-          Your browser does not support HTML video.
-        </video>
+        <Video src="/example.mp4"/>
       </VideoContainer>
     </VideoPlayer>
   );
