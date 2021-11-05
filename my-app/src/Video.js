@@ -121,7 +121,10 @@ const useVideoControlShow = () => {
 }
 
 // 播放器播放控制
-const useVideoPlayStatus = ({videoElem = null, setControlShow = null}) => {
+const useVideoPlayStatus = ({
+    videoElem = null,
+    setControlShow = null
+}) => {
     const [playStatus, setPlayStatus] = useState(false);
     
     const handleSwitchButton = (e) => {
@@ -151,41 +154,71 @@ const useVideoPlayStatus = ({videoElem = null, setControlShow = null}) => {
     }
 }
 
-// 滑鼠操作
-const useVideoFrameMouse = ({videoElem = null, controlShow = false, setControlShow = null}) => {
+// 控制器滑鼠操作
+const useVideoControlMouse = () => {
+    const [controlMouseIn, setControlMouseIn] = useState(false);
+    const [controlMouseMove, setControlMouseMove] = useState(0);
+    
+    const handleMouseEnterVideoControl = useCallback(() => {
+        setControlMouseIn(true);
+    }, []);
+    
+    const handleMouseMoveVideoControl = useCallback(() => {
+        setControlMouseMove(controlMouseMove + 1);
+    }, [controlMouseMove]);
+    
+    const handleMouseLeaveVideoControl = useCallback(() => {
+        setControlMouseIn(false);
+    }, []);
+
+    return {
+        controlMouseIn,
+        setControlMouseIn,
+        controlMouseMove,
+        setControlMouseMove,
+        handleMouseEnterVideoControl,
+        handleMouseMoveVideoControl,
+        handleMouseLeaveVideoControl
+    }
+}
+
+// 播放器滑鼠操作
+const useVideoFrameMouse = ({
+    videoElem = null,
+    controlShow = false,
+    setControlShow = null
+}) => {
     const [mouseIn, setMouseIn] = useState(false);
     const [mouseMove, setMouseMove] = useState(0);
     const [mouseDown, setMouseDown] = useState(false);
     
-    const handleMouseEnterVideoFrame = (e) => {
+    const handleMouseEnterVideoFrame = useCallback(() => {
         setMouseIn(true);
         if(!controlShow) {
             setControlShow(true);
         }
-    }
+    }, [controlShow, setControlShow]);
     
-    const handleMouseMoveVideoFrame = (e) => {
+    const handleMouseMoveVideoFrame = useCallback(() => {
         setMouseMove(mouseMove + 1);
         if(!controlShow) {
             setControlShow(true);
         }
-    }
+    }, [mouseMove, controlShow, setControlShow]);
     
-    const handleMouseLeaveVideoFrame = (e) => {
+    const handleMouseLeaveVideoFrame = useCallback(() => {
         setMouseIn(false);
         setMouseMove(0);
         if(controlShow && !videoElem.paused && !videoElem.ended) {
             setControlShow(false);
         }
-    }
+    }, [videoElem, controlShow, setControlShow]);
     
-    const handleMouseDownVideoFrame = (e) => {
-        console.log('down')
+    const handleMouseDownVideoFrame = useCallback(() => {
         setMouseDown(true);
-    }
+    }, []);
 
     const handleMouseUpVideoFrame = useCallback(() => {
-        console.log('up')
         setMouseDown(false);
     }, []);
 
@@ -205,7 +238,14 @@ const useVideoFrameMouse = ({videoElem = null, controlShow = false, setControlSh
 }
 
 // 控制器顯示控制
-const useVideoControlShowStatus = ({playStatus = false, setControlShow = null, mouseIn = false, mouseMove = 0, mouseDown = false}) => {
+const useVideoControlShowStatus = ({
+    playStatus = false,
+    setControlShow = null,
+    mouseIn = false,
+    mouseMove = 0,
+    mouseDown = false,
+    controlMouseIn = false
+}) => {
     const actTimeout = useRef();
 
     useEffect(() => {
@@ -213,11 +253,11 @@ const useVideoControlShowStatus = ({playStatus = false, setControlShow = null, m
             clearTimeout(actTimeout.current);
         }
         actTimeout.current = setTimeout(() => {
-            if(playStatus && !mouseDown) {
+            if(playStatus && !mouseDown && !controlMouseIn) {
                 setControlShow(false);
             }
         }, 2000);
-    }, [playStatus, mouseIn, mouseMove, mouseDown, setControlShow]);
+    }, [playStatus, mouseIn, mouseMove, mouseDown, setControlShow, controlMouseIn]);
 
     return {
         actTimeout
@@ -228,6 +268,7 @@ const Video = ({
     src = "",
 }) => {
     const videoRef = useRef();
+    const videoControlRef = useRef();
 
     // 控制器
     const {controlShow, setControlShow} = useVideoControlShow();
@@ -238,7 +279,15 @@ const Video = ({
         setControlShow: setControlShow
     });
 
-    // 滑鼠控制
+    // 控制器滑鼠操作
+    const {
+        controlMouseIn,
+        handleMouseEnterVideoControl,
+        handleMouseMoveVideoControl,
+        handleMouseLeaveVideoControl
+    } = useVideoControlMouse();
+
+    // 播放器滑鼠操作
     const {
         mouseIn,
         mouseMove,
@@ -261,12 +310,12 @@ const Video = ({
         setControlShow: setControlShow,
         mouseIn: mouseIn,
         mouseMove: mouseMove,
-        mouseDown: mouseDown
+        mouseDown: mouseDown,
+        controlMouseIn: controlMouseIn
     });
 
     return (
         <VideoFrame
-            onClick={handleSwitchButton}
             onMouseEnter={handleMouseEnterVideoFrame}
             onMouseMove={handleMouseMoveVideoFrame}
             onMouseLeave={handleMouseLeaveVideoFrame}
@@ -280,12 +329,18 @@ const Video = ({
             <video
                 ref={videoRef}
                 playsInline
+                onClick={handleSwitchButton}
                 onEnded={handleVideoEnded}
             >
                 <source src={src} type="video/mp4" />
                 Your browser does not support HTML video.
             </video>
-            <VideoControl>
+            <VideoControl
+                ref={videoControlRef}
+                onMouseEnter={handleMouseEnterVideoControl}
+                onMouseMove={handleMouseMoveVideoControl}
+                onMouseLeave={handleMouseLeaveVideoControl}
+            >
                 <Progress>
 
                 </Progress>
