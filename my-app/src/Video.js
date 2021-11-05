@@ -1,7 +1,8 @@
 import React, {
         useState,
         useEffect,
-        useRef
+        useRef,
+        useCallback
     } from "react";
 import styled from "styled-components";
 import classNames from "classnames";
@@ -86,6 +87,16 @@ const VideoFrame = styled.div`
         }
     }
 
+    &:not(.-show-control) {
+        &.-playing {
+            cursor: none;
+    
+            video {
+                cursor: none;
+            }
+        }
+    }
+
     video {
         width: 100%;
         height: 100%;
@@ -100,38 +111,51 @@ const VideoFrame = styled.div`
     }
 `
 
-const Video = ({
-    src = "",
-}) => {
-    const videoRef = useRef();
-    const [playStatus, setPlayStatus] = useState(false);
-    const [mouseIn, setMouseIn] = useState(false);
-    const [mouseMove, setmouseMove] = useState(0);
+// 控制器
+const useVideoControlShow = () => {
     const [controlShow, setControlShow] = useState(true);
-    const [actTimeout, setActTimeout] = useState(null);
+    return {
+        controlShow,
+        setControlShow
+    }
+}
 
-    useEffect(() => {
-        if (playStatus && (videoRef.current.paused || videoRef.current.ended)) videoRef.current.play();
-        else {
-            videoRef.current.pause();
-            setControlShow(true);
-        }
-    }, [playStatus, setPlayStatus])
-
-    useEffect(() => {
-        if(actTimeout) {
-            clearTimeout(actTimeout);
-        }
-        setActTimeout(setTimeout(() => {
-            if(playStatus) {
-                setControlShow(false);
-            }
-        }, 2000));
-    }, [playStatus, mouseIn, mouseMove])
+// 播放器播放控制
+const useVideoPlayStatus = ({videoElem = null, setControlShow = null}) => {
+    const [playStatus, setPlayStatus] = useState(false);
     
     const handleSwitchButton = (e) => {
         setPlayStatus(!playStatus);
     }
+
+    const handleVideoEnded = (e) => {
+        setPlayStatus(false);
+    }
+
+    useEffect(() => {
+        if(videoElem && setControlShow) {
+            if (playStatus && (videoElem.paused || videoElem.ended)) {
+                videoElem.play();
+            } else {
+                videoElem.pause();
+                setControlShow(true);
+            }
+        }
+    }, [playStatus, videoElem, setControlShow]);
+
+    return {
+        playStatus,
+        setPlayStatus,
+        handleSwitchButton,
+        handleVideoEnded
+    }
+}
+
+// 滑鼠操作
+const useVideoFrameMouse = ({videoElem = null, controlShow = false, setControlShow = null}) => {
+    const [mouseIn, setMouseIn] = useState(false);
+    const [mouseMove, setMouseMove] = useState(0);
+    const [mouseDown, setMouseDown] = useState(false);
     
     const handleMouseEnterVideoFrame = (e) => {
         setMouseIn(true);
@@ -141,7 +165,7 @@ const Video = ({
     }
     
     const handleMouseMoveVideoFrame = (e) => {
-        setmouseMove(mouseMove + 1);
+        setMouseMove(mouseMove + 1);
         if(!controlShow) {
             setControlShow(true);
         }
@@ -149,15 +173,96 @@ const Video = ({
     
     const handleMouseLeaveVideoFrame = (e) => {
         setMouseIn(false);
-        setmouseMove(0)
-        if(controlShow && !videoRef.current.paused && !videoRef.current.ended) {
+        setMouseMove(0);
+        if(controlShow && !videoElem.paused && !videoElem.ended) {
             setControlShow(false);
         }
     }
-
-    const handleVideoEnded = (e) => {
-        setPlayStatus(false);
+    
+    const handleMouseDownVideoFrame = (e) => {
+        console.log('down')
+        setMouseDown(true);
     }
+
+    const handleMouseUpVideoFrame = useCallback(() => {
+        console.log('up')
+        setMouseDown(false);
+    }, []);
+
+    return {
+        mouseIn,
+        setMouseIn,
+        mouseMove,
+        setMouseMove,
+        mouseDown,
+        setMouseDown,
+        handleMouseEnterVideoFrame,
+        handleMouseMoveVideoFrame,
+        handleMouseLeaveVideoFrame,
+        handleMouseDownVideoFrame,
+        handleMouseUpVideoFrame
+    }
+}
+
+// 控制器顯示控制
+const useVideoControlShowStatus = ({playStatus = false, setControlShow = null, mouseIn = false, mouseMove = 0, mouseDown = false}) => {
+    const actTimeout = useRef();
+
+    useEffect(() => {
+        if(actTimeout) {
+            clearTimeout(actTimeout.current);
+        }
+        actTimeout.current = setTimeout(() => {
+            if(playStatus && !mouseDown) {
+                setControlShow(false);
+            }
+        }, 2000);
+    }, [playStatus, mouseIn, mouseMove, mouseDown, setControlShow]);
+
+    return {
+        actTimeout
+    }
+}
+
+const Video = ({
+    src = "",
+}) => {
+    const videoRef = useRef();
+
+    // 控制器
+    const {controlShow, setControlShow} = useVideoControlShow();
+
+    // 播放器播放控制
+    const {playStatus, handleSwitchButton, handleVideoEnded} = useVideoPlayStatus({
+        videoElem: videoRef.current,
+        setControlShow: setControlShow
+    });
+
+    // 滑鼠控制
+    const {
+        mouseIn,
+        mouseMove,
+        mouseDown,
+        handleMouseEnterVideoFrame,
+        handleMouseMoveVideoFrame,
+        handleMouseLeaveVideoFrame,
+        handleMouseDownVideoFrame,
+        handleMouseUpVideoFrame
+    } = useVideoFrameMouse({
+        videoElem: videoRef.current,
+        controlShow: controlShow,
+        setControlShow: setControlShow
+    });
+
+    // 控制器顯示控制
+    useVideoControlShowStatus({
+        videoElem: videoRef.current,
+        playStatus: playStatus,
+        setControlShow: setControlShow,
+        mouseIn: mouseIn,
+        mouseMove: mouseMove,
+        mouseDown: mouseDown
+    });
 
     return (
         <VideoFrame
@@ -165,8 +270,11 @@ const Video = ({
             onMouseEnter={handleMouseEnterVideoFrame}
             onMouseMove={handleMouseMoveVideoFrame}
             onMouseLeave={handleMouseLeaveVideoFrame}
+            onMouseDown={handleMouseDownVideoFrame}
+            onMouseUp={handleMouseUpVideoFrame}
             className={classNames({
-                "-show-control": controlShow
+                "-show-control": controlShow,
+                '-playing': playStatus,
             })}
         >
             <video
@@ -186,13 +294,15 @@ const Video = ({
                         <Button
                             onClick={handleSwitchButton}
                         >
-                            {playStatus
-                                ?   <svg viewBox="0 0 36 36">
-                                        <path d="M 12,26 16,26 16,10 12,10 z M 21,26 25,26 25,10 21,10 z" fill="currentColor"></path>
-                                    </svg>
-                                :   <svg viewBox="0 0 36 36">
-                                        <path d="M 12,26 18.5,22 18.5,14 12,10 z M 18.5,22 25,18 25,18 18.5,14 z" fill="currentColor"></path>
-                                    </svg>
+                            {playStatus &&
+                                <svg viewBox="0 0 36 36">
+                                    <path d="M 12,26 16,26 16,10 12,10 z M 21,26 25,26 25,10 21,10 z" fill="currentColor"></path>
+                                </svg>
+                            }
+                            {!playStatus &&
+                                <svg viewBox="0 0 36 36">
+                                    <path d="M 12,26 18.5,22 18.5,14 12,10 z M 18.5,22 25,18 25,18 18.5,14 z" fill="currentColor"></path>
+                                </svg>
                             }
                         </Button>
                     </ControlsLeft>
