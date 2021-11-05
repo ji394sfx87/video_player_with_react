@@ -9,6 +9,7 @@ import styled from "styled-components";
 import classNames from "classnames";
 
 import VideoVolume from "./VideoVolume";
+import VideoProgress from "./VideoProgress";
 
 const Button = styled.button`
     position: relative;
@@ -39,8 +40,9 @@ const Button = styled.button`
 const Progress = styled.div`
     position: relative;
     display: block;
+    padding: 0 10px;
     width: 100%;
-    height: 20px;
+    box-sizing: border-box;
 `
 
 const ControlsLeft = styled.div`
@@ -118,6 +120,21 @@ const VideoFrame = styled.div`
         transition: opacity .3s, transform .3s;
     }
 `
+
+// 初始載入
+const useInit = () => {
+    const [loadStart, setLoadStart] = useState(false);
+
+    const onLoadedMetadata = useCallback(() => {
+        setLoadStart(true);
+    }, []);
+
+    return {
+        loadStart,
+        setLoadStart,
+        onLoadedMetadata
+    }
+}
 
 // 控制器
 const useVideoControlShow = () => {
@@ -363,6 +380,8 @@ const Video = ({
     const videoControlRef = useRef();
     const VideoFrameRef = useRef();
 
+    const {loadStart, onLoadedMetadata} = useInit();
+
     // 控制器
     const {controlShow, setControlShow} = useVideoControlShow();
 
@@ -432,6 +451,7 @@ const Video = ({
                 playsInline
                 onClick={handleSwitchButton}
                 onEnded={handleVideoEnded}
+                onLoadedMetadata={onLoadedMetadata}
             >
                 <source src={src} type="video/mp4" />
                 Your browser does not support HTML video.
@@ -443,7 +463,10 @@ const Video = ({
                 onMouseLeave={handleMouseLeaveVideoControl}
             >
                 <Progress>
-
+                    <VideoProgress
+                        videoRef={videoRef}
+                        loadStart={loadStart}
+                    ></VideoProgress>
                 </Progress>
                 <Controls>
                     <ControlsLeft>
