@@ -464,6 +464,7 @@ const Video = ({
             >
                 <Progress>
                     <VideoProgress
+                        VideoFrameRef={VideoFrameRef}
                         videoRef={videoRef}
                         loadStart={loadStart}
                     ></VideoProgress>
