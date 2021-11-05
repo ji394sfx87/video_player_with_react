@@ -8,6 +8,8 @@ import React, {
 import styled from "styled-components";
 import classNames from "classnames";
 
+import VideoVolume from "./VideoVolume";
+
 const Button = styled.button`
     position: relative;
     display: flex;
@@ -461,6 +463,11 @@ const Video = ({
                         </Button>
                     </ControlsLeft>
                     <ControlsRight>
+                        <Button>
+                            <VideoVolume
+                                videoRef={videoRef}
+                            ></VideoVolume>
+                        </Button>
                         <Button
                             ref={videoFullScreenRef}
                             onClick={handleFullScreen}

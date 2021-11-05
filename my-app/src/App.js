@@ -27,7 +27,7 @@ function App() {
   return (
     <VideoPlayer>
       <VideoContainer>
-        <Video src="/example.mp4"/>
+        <Video src="/example2.mp4"/>
       </VideoContainer>
     </VideoPlayer>
   );
