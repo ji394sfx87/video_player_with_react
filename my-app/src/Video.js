@@ -2,7 +2,8 @@ import React, {
         useState,
         useEffect,
         useRef,
-        useCallback
+        useCallback,
+        useMemo
     } from "react";
 import styled from "styled-components";
 import classNames from "classnames";
@@ -20,6 +21,11 @@ const Button = styled.button`
     background-color: transparent;
     border: 0;
     cursor: pointer;
+    transition: color .3s;
+
+    &:hover {
+        color: #f26f21;
+    }
 
     svg {
         display: block;
@@ -264,11 +270,96 @@ const useVideoControlShowStatus = ({
     }
 }
 
+// 全螢幕控制
+const useFullScreen = ({
+    VideoFrameElem = null,
+    videoFullScreenElem = null
+}) => {
+    const [fullScreenStatus, setFullScreenStatus] = useState(false);
+
+    const fullScreenEnabled = useMemo(() => {
+        return !!(
+            document.fullscreenEnabled ||
+            document.mozFullScreenEnabled ||
+            document.msFullscreenEnabled ||
+            document.webkitSupportsFullscreen ||
+            document.webkitFullscreenEnabled ||
+            document.createElement('video').webkitRequestFullScreen
+        )
+    }, []);
+
+    useEffect(() => {
+        if(videoFullScreenElem) {
+            if(!fullScreenEnabled) {
+                videoFullScreenElem.style.display = "none";
+            } else {
+                videoFullScreenElem.style.display = "flex";
+            }
+        }
+    }, [videoFullScreenElem, fullScreenEnabled]);
+
+    useEffect(() => {
+        if (fullScreenStatus) {
+            if(VideoFrameElem) {
+                if (VideoFrameElem.requestFullscreen) VideoFrameElem.requestFullscreen();
+                else if (VideoFrameElem.mozRequestFullScreen) VideoFrameElem.mozRequestFullScreen();
+                else if (VideoFrameElem.webkitRequestFullScreen) VideoFrameElem.webkitRequestFullScreen();
+                else if (VideoFrameElem.msRequestFullscreen) VideoFrameElem.msRequestFullscreen();
+            }
+        } else {
+            if(document.webkitIsFullScreen ||
+                document.mozFullScreen ||
+                document.msFullscreenElement ||
+                document.fullscreenElement
+            ) {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+                else if (document.webkitCancelFullScreen) document.webkitCancelFullScreen();
+                else if (document.msExitFullscreen) document.msExitFullscreen();
+            }
+        }
+
+        // 偵測 fullscreen change
+        const fullScreenChange = (e) => {
+            if (!(document.webkitIsFullScreen ||
+                document.mozFullScreen ||
+                document.msFullscreenElement ||
+                document.fullscreenElement)
+            ) {
+                setFullScreenStatus(false);
+            }
+        }
+
+        if(VideoFrameElem) {
+            VideoFrameElem.addEventListener("fullscreenchange", fullScreenChange)
+        }
+
+        return (() => {
+            if(VideoFrameElem) {
+                VideoFrameElem.removeEventListener("fullscreenchange", fullScreenChange)
+            }
+        })
+    }, [fullScreenStatus, VideoFrameElem]);
+
+    const handleFullScreen = useCallback(() => {
+        setFullScreenStatus(!fullScreenStatus);
+    }, [fullScreenStatus, setFullScreenStatus]);
+
+    return {
+        fullScreenStatus,
+        setFullScreenStatus,
+        fullScreenEnabled,
+        handleFullScreen
+    }
+}
+
 const Video = ({
     src = "",
 }) => {
     const videoRef = useRef();
+    const videoFullScreenRef = useRef();
     const videoControlRef = useRef();
+    const VideoFrameRef = useRef();
 
     // 控制器
     const {controlShow, setControlShow} = useVideoControlShow();
@@ -314,13 +405,21 @@ const Video = ({
         controlMouseIn: controlMouseIn
     });
 
+    // 全螢幕控制
+    const {fullScreenStatus, handleFullScreen} = useFullScreen({
+        VideoFrameElem: VideoFrameRef.current,
+        videoFullScreenElem: videoFullScreenRef.current
+    });
+
     return (
         <VideoFrame
+            ref={VideoFrameRef}
             onMouseEnter={handleMouseEnterVideoFrame}
             onMouseMove={handleMouseMoveVideoFrame}
             onMouseLeave={handleMouseLeaveVideoFrame}
             onMouseDown={handleMouseDownVideoFrame}
             onMouseUp={handleMouseUpVideoFrame}
+            onDoubleClick={handleFullScreen}
             className={classNames({
                 "-show-control": controlShow,
                 '-playing': playStatus,
@@ -362,6 +461,27 @@ const Video = ({
                         </Button>
                     </ControlsLeft>
                     <ControlsRight>
+                        <Button
+                            ref={videoFullScreenRef}
+                            onClick={handleFullScreen}
+                        >
+                            {!fullScreenStatus &&
+                                <svg viewBox="0 0 36 36">
+                                    <path d="m 10,16 2,0 0,-4 4,0 0,-2 L 10,10 l 0,6 0,0 z" fill="currentColor"></path>
+                                    <path d="m 20,10 0,2 4,0 0,4 2,0 L 26,10 l -6,0 0,0 z" fill="currentColor"></path>
+                                    <path d="m 24,24 -4,0 0,2 L 26,26 l 0,-6 -2,0 0,4 0,0 z" fill="currentColor"></path>
+                                    <path d="M 12,20 10,20 10,26 l 6,0 0,-2 -4,0 0,-4 0,0 z" fill="currentColor"></path>
+                                </svg>
+                            }
+                            {fullScreenStatus &&
+                                <svg viewBox="0 0 36 36">
+                                    <path d="m 14,14 -4,0 0,2 6,0 0,-6 -2,0 0,4 0,0 z" fill="currentColor"></path>
+                                    <path d="m 22,14 0,-4 -2,0 0,6 6,0 0,-2 -4,0 0,0 z" fill="currentColor"></path>
+                                    <path d="m 20,26 2,0 0,-4 4,0 0,-2 -6,0 0,6 0,0 z" fill="currentColor"></path>
+                                    <path d="m 10,22 4,0 0,4 2,0 0,-6 -6,0 0,2 0,0 z" fill="currentColor"></path>
+                                </svg>
+                            }
+                        </Button>
                     </ControlsRight>
                 </Controls>
             </VideoControl>
