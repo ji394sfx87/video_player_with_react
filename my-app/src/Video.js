@@ -112,6 +112,10 @@ const VideoFrame = styled.div`
         height: 100%;
         max-width: 100%;
         max-height: 100%;
+
+        &::-webkit-media-controls {
+            display: none;
+        }
     }
 
     ${VideoControl} {
@@ -122,8 +126,16 @@ const VideoFrame = styled.div`
 `
 
 // 初始載入
-const useInit = () => {
+const useInit = ({
+    videoElem = null
+}) => {
     const [loadStart, setLoadStart] = useState(false);
+
+    useEffect(() => {
+        if(videoElem) {
+            videoElem.controls = false;
+        }
+    }, [videoElem])
 
     const onLoadedMetadata = useCallback(() => {
         setLoadStart(true);
@@ -176,6 +188,16 @@ const useVideoPlayStatus = ({
         setPlayStatus,
         handleSwitchButton,
         handleVideoEnded
+    }
+}
+
+const useVideoMouse = () => {
+    const handleContextMenu = useCallback((e) => {
+        e.preventDefault();
+    }, [])
+
+    return {
+        handleContextMenu
     }
 }
 
@@ -380,7 +402,10 @@ const Video = ({
     const videoControlRef = useRef();
     const VideoFrameRef = useRef();
 
-    const {loadStart, onLoadedMetadata} = useInit();
+    // 初始載入
+    const {loadStart, onLoadedMetadata} = useInit({
+        videoElem: videoRef.current
+    });
 
     // 控制器
     const {controlShow, setControlShow} = useVideoControlShow();
@@ -414,6 +439,11 @@ const Video = ({
         controlShow: controlShow,
         setControlShow: setControlShow
     });
+
+    // 影片滑鼠操作
+    const {
+        handleContextMenu
+    } = useVideoMouse()
 
     // 控制器顯示控制
     useVideoControlShowStatus({
@@ -452,6 +482,7 @@ const Video = ({
                 onClick={handleSwitchButton}
                 onEnded={handleVideoEnded}
                 onLoadedMetadata={onLoadedMetadata}
+                onContextMenu={handleContextMenu}
             >
                 <source src={src} type="video/mp4" />
                 Your browser does not support HTML video.
@@ -472,6 +503,7 @@ const Video = ({
                 <Controls>
                     <ControlsLeft>
                         <Button
+                            title={playStatus ? '暫停' : '播放'}
                             onClick={handleSwitchButton}
                         >
                             {playStatus &&
@@ -492,8 +524,16 @@ const Video = ({
                                 videoRef={videoRef}
                             ></VideoVolume>
                         </Button>
+                        {/* <Button
+                            title="子母畫面"
+                        >
+                            <svg viewBox="0 0 36 36">
+                                <path d="M25,17 L17,17 L17,23 L25,23 L25,17 L25,17 Z M29,25 L29,10.98 C29,9.88 28.1,9 27,9 L9,9 C7.9,9 7,9.88 7,10.98 L7,25 C7,26.1 7.9,27 9,27 L27,27 C28.1,27 29,26.1 29,25 L29,25 Z M27,25.02 L9,25.02 L9,10.97 L27,10.97 L27,25.02 L27,25.02 Z" fill="currentColor"></path>
+                            </svg>
+                        </Button> */}
                         <Button
                             ref={videoFullScreenRef}
+                            title={fullScreenStatus ? '結束全螢幕' : '全螢幕'}
                             onClick={handleFullScreen}
                         >
                             {!fullScreenStatus &&
