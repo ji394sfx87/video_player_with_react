@@ -10,6 +10,7 @@ import classNames from "classnames";
 
 import VideoVolume from "./VideoVolume";
 import VideoProgress from "./VideoProgress";
+import VideoTimer from "./VideoTimer";
 
 const Button = styled.button`
     position: relative;
@@ -35,6 +36,13 @@ const Button = styled.button`
         width: 100%;
         height: 100%;
     }
+`
+
+const Timer = styled.div`
+    position: relative;
+    display: block;
+    padding: 0 20px;
+    height: 44px;
 `
 
 const Progress = styled.div`
@@ -191,6 +199,7 @@ const useVideoPlayStatus = ({
     }
 }
 
+// 影片滑鼠操作
 const useVideoMouse = () => {
     const handleContextMenu = useCallback((e) => {
         e.preventDefault();
@@ -517,6 +526,12 @@ const Video = ({
                                 </svg>
                             }
                         </Button>
+                        <Timer>
+                            <VideoTimer
+                                videoRef={videoRef}
+                                loadStart={loadStart}
+                            ></VideoTimer>
+                        </Timer>
                     </ControlsLeft>
                     <ControlsRight>
                         <Button>
