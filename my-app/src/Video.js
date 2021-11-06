@@ -11,6 +11,7 @@ import classNames from "classnames";
 import VideoVolume from "./VideoVolume";
 import VideoProgress from "./VideoProgress";
 import VideoTimer from "./VideoTimer";
+import VideoPictureInPicture from "./VideoPictureInPicture";
 
 const Button = styled.button`
     position: relative;
@@ -172,30 +173,38 @@ const useVideoPlayStatus = ({
 }) => {
     const [playStatus, setPlayStatus] = useState(false);
     
-    const handleSwitchButton = (e) => {
-        setPlayStatus(!playStatus);
-    }
-
-    const handleVideoEnded = (e) => {
-        setPlayStatus(false);
-    }
-
-    useEffect(() => {
-        if(videoElem && setControlShow) {
-            if (playStatus && (videoElem.paused || videoElem.ended)) {
-                videoElem.play();
-            } else {
-                videoElem.pause();
-                setControlShow(true);
-            }
+    const handleSwitchButton = useCallback((e) => {
+        if (videoElem.paused || videoElem.ended) {
+            videoElem.play();
+            setPlayStatus(true);
+        } else {
+            videoElem.pause();
+            setPlayStatus(false);
+            setControlShow(true);
         }
-    }, [playStatus, videoElem, setControlShow]);
+    }, [videoElem, setControlShow]);
+
+    const handleVideoEnded = useCallback((e) => {
+        setPlayStatus(false);
+        setControlShow(true);
+    }, [setControlShow])
+
+    const handleVideoPlay = useCallback(() => {
+        setPlayStatus(true);
+    }, []);
+
+    const handleVideoPause = useCallback(() => {
+        setPlayStatus(false);
+        setControlShow(true);
+    }, [setControlShow]);
 
     return {
         playStatus,
         setPlayStatus,
         handleSwitchButton,
-        handleVideoEnded
+        handleVideoEnded,
+        handleVideoPlay,
+        handleVideoPause
     }
 }
 
@@ -420,7 +429,13 @@ const Video = ({
     const {controlShow, setControlShow} = useVideoControlShow();
 
     // 播放器播放控制
-    const {playStatus, handleSwitchButton, handleVideoEnded} = useVideoPlayStatus({
+    const {
+        playStatus,
+        handleSwitchButton,
+        handleVideoEnded,
+        handleVideoPlay,
+        handleVideoPause
+    } = useVideoPlayStatus({
         videoElem: videoRef.current,
         setControlShow: setControlShow
     });
@@ -489,9 +504,11 @@ const Video = ({
                 ref={videoRef}
                 playsInline
                 onClick={handleSwitchButton}
-                onEnded={handleVideoEnded}
                 onLoadedMetadata={onLoadedMetadata}
                 onContextMenu={handleContextMenu}
+                onPlay={handleVideoPlay}
+                onPause={handleVideoPause}
+                onEnded={handleVideoEnded}
             >
                 <source src={src} type="video/mp4" />
                 Your browser does not support HTML video.
@@ -539,13 +556,11 @@ const Video = ({
                                 videoRef={videoRef}
                             ></VideoVolume>
                         </Button>
-                        {/* <Button
-                            title="子母畫面"
-                        >
-                            <svg viewBox="0 0 36 36">
-                                <path d="M25,17 L17,17 L17,23 L25,23 L25,17 L25,17 Z M29,25 L29,10.98 C29,9.88 28.1,9 27,9 L9,9 C7.9,9 7,9.88 7,10.98 L7,25 C7,26.1 7.9,27 9,27 L27,27 C28.1,27 29,26.1 29,25 L29,25 Z M27,25.02 L9,25.02 L9,10.97 L27,10.97 L27,25.02 L27,25.02 Z" fill="currentColor"></path>
-                            </svg>
-                        </Button> */}
+                        <Button>
+                            <VideoPictureInPicture
+                                videoRef={videoRef}
+                            ></VideoPictureInPicture>
+                        </Button>
                         <Button
                             ref={videoFullScreenRef}
                             title={fullScreenStatus ? '結束全螢幕' : '全螢幕'}
