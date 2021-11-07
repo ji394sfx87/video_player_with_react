@@ -226,15 +226,19 @@ const useMouse = ({
 
 // 鍵盤操作
 const useKeyboard = ({
-    videoElem = null,
     volume = 0,
     setVolume = null,
     muteStatus = false,
-    setMuteStatus = null
+    setMuteStatus = null,
+    functionKeyDown = false,
+    setFunctionKeyDown = null
 }) => {
     const keydownWithMute = useCallback(() => {
         setMuteStatus(!muteStatus);
-    }, [muteStatus, setMuteStatus]);
+        if(setFunctionKeyDown) {
+            setFunctionKeyDown(true);
+        }
+    }, [muteStatus, setMuteStatus, setFunctionKeyDown]);
 
     const keydownWithVolumeChange = useCallback((type) => {
         let fixVolume = 0.1;
@@ -249,7 +253,10 @@ const useKeyboard = ({
         } else {
             setVolume(1);
         }
-    }, [volume, setVolume]);
+        if(setFunctionKeyDown) {
+            setFunctionKeyDown(true);
+        }
+    }, [volume, setVolume, setFunctionKeyDown]);
 
     const keydown = useCallback((e) => {
         if(e.code === "KeyM") {
@@ -261,17 +268,27 @@ const useKeyboard = ({
         }
     }, [keydownWithMute, keydownWithVolumeChange]);
 
+    const keyup = useCallback((e) => {
+        if(functionKeyDown) {
+            setFunctionKeyDown(false);
+        }
+    }, [functionKeyDown, setFunctionKeyDown]);
+
     useEffect(() => {
         document.addEventListener("keydown", keydown);
+        document.addEventListener("keyup", keyup);
 
         return (() => {
             document.removeEventListener("keydown", keydown);
+            document.removeEventListener("keyup", keyup);
         });
-    }, [keydown]);
+    }, [keydown, keyup]);
 }
 
 const VideoVolume = ({
-    videoRef = null
+    videoRef = null,
+    functionKeyDown = false,
+    setFunctionKeyDown = null
 }) => {
     const VolumeBarRef = useRef();
     const VolumeValueRef = useRef();
@@ -309,7 +326,9 @@ const VideoVolume = ({
         volume: volume,
         setVolume: setVolume,
         muteStatus: muteStatus,
-        setMuteStatus: setMuteStatus
+        setMuteStatus: setMuteStatus,
+        functionKeyDown: functionKeyDown,
+        setFunctionKeyDown: setFunctionKeyDown
     });
 
     return (

@@ -203,9 +203,19 @@ const useInit = ({
 // 控制器
 const useVideoControlShow = () => {
     const [controlShow, setControlShow] = useState(true);
+    const [functionKeyDown, setFunctionKeyDown] = useState(false);
+
+    useEffect(() => {
+        if(functionKeyDown) {
+            setControlShow(true);
+        }
+    }, [functionKeyDown]);
+
     return {
         controlShow,
-        setControlShow
+        setControlShow,
+        functionKeyDown,
+        setFunctionKeyDown
     }
 }
 
@@ -366,6 +376,7 @@ const useVideoFrameMouse = ({
 // 控制器顯示控制
 const useVideoControlShowStatus = ({
     playStatus = false,
+    functionKeyDown = false,
     setControlShow = null,
     mouseIn = false,
     mouseMove = 0,
@@ -379,11 +390,11 @@ const useVideoControlShowStatus = ({
             clearTimeout(actTimeout.current);
         }
         actTimeout.current = setTimeout(() => {
-            if(playStatus && !mouseDown && !controlMouseIn) {
+            if(playStatus && !mouseDown && !controlMouseIn && !functionKeyDown) {
                 setControlShow(false);
             }
         }, 2000);
-    }, [playStatus, mouseIn, mouseMove, mouseDown, setControlShow, controlMouseIn]);
+    }, [playStatus, mouseIn, mouseMove, mouseDown, functionKeyDown, setControlShow, controlMouseIn]);
 
     return {
         actTimeout
@@ -476,7 +487,8 @@ const useFullScreen = ({
 // 鍵盤操作
 const useVideoKeyboard = ({
     videoElem = null,
-    playStatus = false
+    playStatus = false,
+    setFunctionKeyDown = null
 }) => {
     const keydownWithPlay = useCallback(() => {
         if(videoElem) {
@@ -492,15 +504,26 @@ const useVideoKeyboard = ({
         if(e.code === "KeyK" || e.code === "Space") {
             keydownWithPlay();
         }
-    }, [keydownWithPlay]);
+        if(setFunctionKeyDown) {
+            setFunctionKeyDown(true);
+        }
+    }, [keydownWithPlay, setFunctionKeyDown]);
+
+    const keyup = useCallback((e) => {
+        if(setFunctionKeyDown) {
+            setFunctionKeyDown(false);
+        }
+    }, [setFunctionKeyDown]);
 
     useEffect(() => {
         document.addEventListener("keydown", keydown);
+        document.addEventListener("keyup", keyup);
 
         return (() => {
             document.removeEventListener("keydown", keydown);
+            document.removeEventListener("keyup", keyup);
         });
-    }, [keydown]);
+    }, [keydown, keyup]);
 }
 
 const Video = ({
@@ -517,7 +540,12 @@ const Video = ({
     });
 
     // 控制器
-    const {controlShow, setControlShow} = useVideoControlShow();
+    const {
+        controlShow,
+        setControlShow,
+        functionKeyDown,
+        setFunctionKeyDown
+    } = useVideoControlShow();
 
     // 播放器播放控制
     const {
@@ -567,6 +595,7 @@ const Video = ({
         videoElem: videoRef.current,
         playStatus: playStatus,
         setControlShow: setControlShow,
+        functionKeyDown: functionKeyDown,
         mouseIn: mouseIn,
         mouseMove: mouseMove,
         mouseDown: mouseDown,
@@ -582,7 +611,8 @@ const Video = ({
     // 鍵盤操作
     useVideoKeyboard({
         videoElem: videoRef.current,
-        playStatus: playStatus
+        playStatus: playStatus,
+        setFunctionKeyDown: setFunctionKeyDown
     });
 
     return (
@@ -672,6 +702,8 @@ const Video = ({
                         <Button>
                             <VideoVolume
                                 videoRef={videoRef}
+                                functionKeyDown={functionKeyDown}
+                                setFunctionKeyDown={setFunctionKeyDown}
                             ></VideoVolume>
                         </Button>
                         <Button>
