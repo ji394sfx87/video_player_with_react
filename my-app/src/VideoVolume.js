@@ -334,7 +334,7 @@ const VideoVolume = ({
     return (
         <VolumeButton>
             <ButtonFrame
-                title={muteStatus ? '解除靜音' : '靜音'}
+                title={muteStatus ? '解除靜音(M)' : '靜音(M)'}
                 onClick={handleMute}
             >
                 {muteStatus &&

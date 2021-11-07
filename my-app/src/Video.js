@@ -258,11 +258,11 @@ const useVideoPlayStatus = ({
     const playButtonTitle = useMemo(() => {
         let title = "";
         if(playStatus && !endStatus) {
-            title = "暫停";
+            title = "暫停(K)";
         } else if(!playStatus && !endStatus) {
-            title = "播放";
+            title = "播放(K)";
         } else {
-            title = "重播";
+            title = "重播(K)";
         }
         return title;
     }, [playStatus, endStatus]);
