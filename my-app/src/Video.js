@@ -473,6 +473,37 @@ const useFullScreen = ({
     }
 }
 
+// 鍵盤操作
+const useVideoKeyboard = ({
+    videoElem = null,
+    playStatus = false
+}) => {
+    const keydownWidthPlay = useCallback(() => {
+        if(videoElem) {
+            if(!playStatus) {
+                videoElem.play();
+            } else {
+                videoElem.pause();
+            }
+        }
+    }, [videoElem, playStatus]);
+
+    const keydown = useCallback((e) => {
+        console.log(e.code);
+        if(e.code === "KeyK" || e.code === "Space") {
+            keydownWidthPlay();
+        }
+    }, [keydownWidthPlay]);
+
+    useEffect(() => {
+        document.addEventListener("keydown", keydown);
+
+        return (() => {
+            document.removeEventListener("keydown", keydown);
+        });
+    }, [keydown]);
+}
+
 const Video = ({
     src = "",
 }) => {
@@ -547,6 +578,11 @@ const Video = ({
     const {fullScreenStatus, handleFullScreen} = useFullScreen({
         VideoFrameElem: VideoFrameRef.current,
         videoFullScreenElem: videoFullScreenRef.current
+    });
+
+    useVideoKeyboard({
+        videoElem: videoRef.current,
+        playStatus: playStatus
     });
 
     return (
