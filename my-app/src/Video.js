@@ -497,7 +497,7 @@ const Video = ({
             onDoubleClick={handleFullScreen}
             className={classNames({
                 "-show-control": controlShow,
-                '-playing': playStatus,
+                "-playing": playStatus,
             })}
         >
             <video

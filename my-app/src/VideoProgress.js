@@ -5,6 +5,7 @@ import React, {
     useCallback
 } from "react";
 import styled from "styled-components";
+import classNames from "classnames";
 
 const ProgressBar = styled.div`
     position: relative;
@@ -58,6 +59,38 @@ const ProgressFrame = styled.div`
     transition: transform .3s;
 `
 
+const ProgressHintTimeBox = styled.div`
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    color: #ddd;
+    line-height: 1;
+    font-size: 14px;
+    font-family: Arial;
+    background-color: rgba(0,0,0,0.6);
+    border-radius: 5px;
+    box-sizing: border-box;
+`
+
+const ProgressHintTime = styled.div`
+    position: absolute;
+    bottom: 100%;
+    left: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateX(-50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+
+    &.-show {
+        opacity: 1;
+    }
+`
+
 const Progress = styled.div`
     position: relative;
     display: flex;
@@ -80,6 +113,28 @@ const Progress = styled.div`
         }
     }
 `
+
+// 進度條提示時間
+const useHintTime = ({
+    ProgressFrameElem = null,
+    ProgressHintTimeBoxElem = null
+}) => {
+    const [hintTime, setHintTime] = useState('');
+    const [hintTimePos, setHintTimePos] = useState(0);
+
+    useEffect(() => {
+        if(ProgressFrameElem && ProgressHintTimeBoxElem) {
+            ProgressHintTimeBoxElem.style.transform = `translateX(${hintTimePos}px)`;
+        }
+    }, [ProgressFrameElem, ProgressHintTimeBoxElem, hintTimePos]);
+
+    return {
+        hintTime,
+        setHintTime,
+        hintTimePos,
+        setHintTimePos
+    };
+}
 
 // 進度條控制
 const useVideoProgress = ({
@@ -158,21 +213,87 @@ const useVideoProgress = ({
 
 // 滑鼠控制
 const useMouse = ({
+    setHintTime = null,
+    setHintTimePos = null,
     VideoFrameElem = null,
     videoElem = null,
-    ProgressFrameElem = null
+    ProgressFrameElem = null,
+    ProgressHintTimeBoxElem = null
 }) => {
+    const [progressMouseIn, setProgressMouseIn] = useState(false);
     const [progressMouseDown, setProgressMouseDown] = useState(false);
 
-    const handleProgressClick = useCallback((e) => {
-        if(videoElem && ProgressFrameElem) {
-            const frameRect = ProgressFrameElem.getBoundingClientRect();
-            const posX = e.clientX - frameRect.left;
-            const scale = posX / ProgressFrameElem.offsetWidth;
-            const time = videoElem.duration * scale
-            videoElem.currentTime = time
+    const getTimeString = useCallback((time) => {
+        const hours = Math.floor(time / 60 / 60);
+        const minutes = Math.floor((time - hours * 60 * 60) / 60);   
+        const seconds = Math.floor(time - minutes * 60);
+
+        let houtString = "";
+        if(hours > 0) {
+            houtString = hours < 10 ? "0" + hours : hours;
         }
-    }, [videoElem, ProgressFrameElem]);
+        let minuteString = minutes < 10 ? "0" + minutes : minutes;
+        let secondString = seconds < 10 ? "0" + seconds : seconds;
+
+        let timeString = "";
+        timeString += houtString ? `${houtString}:` : "";
+        timeString += `${minuteString}:`;
+        timeString += `${secondString}`;
+        return timeString;
+    }, []);
+
+    const setMousePos = useCallback((posX) => {
+        if(ProgressFrameElem && ProgressHintTimeBoxElem) {
+            const ProgressFrameElemWidth = ProgressFrameElem.offsetWidth;
+            const ProgressHintTimeBoxElemWidth = ProgressHintTimeBoxElem.offsetWidth;
+            const boxHalfWidth = ProgressHintTimeBoxElemWidth / 2;
+            if(posX < boxHalfWidth) {
+                setHintTimePos(boxHalfWidth);
+            } else if((ProgressFrameElemWidth - posX) < boxHalfWidth) {
+                setHintTimePos(ProgressFrameElemWidth - boxHalfWidth);
+            } else {
+                setHintTimePos(posX);
+            }
+        }
+    }, [ProgressFrameElem, ProgressHintTimeBoxElem, setHintTimePos]);
+
+    const getMousePos = useCallback((e) => {
+        if(ProgressFrameElem) {
+            const frameRect = ProgressFrameElem.getBoundingClientRect();
+            const frameWidth = ProgressFrameElem.offsetWidth;
+            let posX = e.clientX - frameRect.left;
+            if(posX < 0) {
+                posX = 0;
+            } else if (posX > frameWidth) {
+                posX = frameWidth;
+            }
+            setMousePos(posX);
+            return posX;
+        }
+        return 0;
+    }, [ProgressFrameElem, setMousePos]);
+
+    const getMousePosTime = useCallback((e) => {
+        if(videoElem && ProgressFrameElem) {
+            const frameWidth = ProgressFrameElem.offsetWidth;
+            const posX = getMousePos(e);
+            const scale = posX / frameWidth;
+            const time = videoElem.duration * scale;
+            return time;
+        }
+        return 0;
+    }, [videoElem, ProgressFrameElem, getMousePos]);
+
+    const handleProgressClick = useCallback((e) => {
+        videoElem.currentTime = getMousePosTime(e);
+    }, [videoElem, getMousePosTime]);
+
+    const handleProgressMouseMove = useCallback((e) => {
+        const timeString = getTimeString(getMousePosTime(e));
+        if(setHintTime) {
+            setHintTime(timeString);
+        }
+    }, [getMousePosTime, getTimeString, setHintTime]);
 
     const handleProgressMouseDown = useCallback(() => {
         setProgressMouseDown(true)
@@ -182,17 +303,19 @@ const useMouse = ({
         setProgressMouseDown(false)
     }, [setProgressMouseDown]);
 
+    const handleProgressMouseEnter = useCallback(() => {
+        setProgressMouseIn(true);
+    }, []);
+
     const videoFrameMouseMove = useCallback((e) => {
         if(progressMouseDown) {
-            if(videoElem && ProgressFrameElem) {
-                const frameRect = ProgressFrameElem.getBoundingClientRect();
-                const posX = e.clientX - frameRect.left;
-                const scale = posX / ProgressFrameElem.offsetWidth;
-                const time = videoElem.duration * scale
-                videoElem.currentTime = time
-            }
+            videoElem.currentTime = getMousePosTime(e);
         }
-    }, [progressMouseDown, videoElem, ProgressFrameElem]);
+    }, [progressMouseDown, videoElem, getMousePosTime]);
+
+    const handleProgressMouseLeave = useCallback(() => {
+        setProgressMouseIn(false);
+    }, []);
 
     const videoFrameMouseUp = useCallback((e) => {
         setProgressMouseDown(false)
@@ -213,7 +336,11 @@ const useMouse = ({
     }, [VideoFrameElem, videoFrameMouseMove, videoFrameMouseUp])
 
     return {
+        progressMouseIn,
         handleProgressClick,
+        handleProgressMouseEnter,
+        handleProgressMouseMove,
+        handleProgressMouseLeave,
         handleProgressMouseDown,
         handleProgressMouseUp
     }
@@ -224,10 +351,22 @@ const VideoProgress = ({
     videoRef = null,
     loadStart = false
 }) => {
+    const ProgressRef = useRef();
     const ProgressFrameRef = useRef();
     const ProgressBufferedRef = useRef();
     const ProgressBarRef = useRef();
     const ProgressDotRef = useRef();
+    const ProgressHintTimeBoxRef = useRef();
+
+    // 進度條提示時間
+    const {
+        hintTime,
+        setHintTime,
+        setHintTimePos
+    } = useHintTime({
+        ProgressFrameElem: ProgressFrameRef.current,
+        ProgressHintTimeBoxElem: ProgressHintTimeBoxRef.current
+    });
 
     // 進度條控制
     useVideoProgress({
@@ -241,21 +380,41 @@ const VideoProgress = ({
 
     // 滑鼠控制
     const {
+        progressMouseIn,
         handleProgressClick,
+        handleProgressMouseEnter,
+        handleProgressMouseMove,
+        handleProgressMouseLeave,
         handleProgressMouseDown,
         handleProgressMouseUp
     } = useMouse({
+        setHintTime: setHintTime,
+        setHintTimePos: setHintTimePos,
         VideoFrameElem: VideoFrameRef.current,
         videoElem: videoRef.current,
-        ProgressFrameElem: ProgressFrameRef.current
+        ProgressFrameElem: ProgressFrameRef.current,
+        ProgressHintTimeBoxElem: ProgressHintTimeBoxRef.current
     });
 
     return (
         <Progress
+            ref={ProgressRef}
             onClick={handleProgressClick}
+            onMouseEnter={handleProgressMouseEnter}
+            onMouseMove={handleProgressMouseMove}
+            onMouseLeave={handleProgressMouseLeave}
             onMouseDown={handleProgressMouseDown}
             onMouseUp={handleProgressMouseUp}
         >
+            <ProgressHintTime
+                className={classNames({
+                    "-show": progressMouseIn
+                })}
+            >
+                <ProgressHintTimeBox
+                    ref={ProgressHintTimeBoxRef}
+                >{hintTime}</ProgressHintTimeBox>
+            </ProgressHintTime>
             <ProgressFrame
                 ref={ProgressFrameRef}
             >
