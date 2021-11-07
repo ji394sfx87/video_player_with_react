@@ -8,7 +8,7 @@ const VideoPlayer = styled.div`
   justify-content: center;
   width: 100%;
   height: 100vh;
-  background-color: #fff;
+  background-color: #1c1c1c;
 `
 
 const VideoContainer = styled.div`
