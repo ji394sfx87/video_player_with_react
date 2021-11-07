@@ -346,10 +346,61 @@ const useMouse = ({
     }
 }
 
+// 鍵盤操作
+const useKeyboard = ({
+    videoElem = null,
+    functionKeyDown = false,
+    setFunctionKeyDown = null
+}) => {
+    const keydownWithCurrentTimeChange = useCallback((moveTime = 0) => {
+        if(videoElem) {
+            const duration = videoElem.duration;
+            const currentTime = videoElem.currentTime;
+            let toTime = currentTime + moveTime;
+            if(toTime < 0) {
+                toTime = 0;
+            } else if(toTime > duration) {
+                toTime = duration;
+            }
+            videoElem.currentTime = toTime;
+        }
+    }, [videoElem]);
+
+    const keydown = useCallback((e) => {
+        if(e.code === "KeyL") {
+            keydownWithCurrentTimeChange(10);
+        } else if(e.code === "KeyJ") {
+            keydownWithCurrentTimeChange(-10);
+        } else if(e.code === "ArrowRight") {
+            keydownWithCurrentTimeChange(5);
+        } else if(e.code === "ArrowLeft") {
+            keydownWithCurrentTimeChange(-5);
+        }
+    }, [keydownWithCurrentTimeChange]);
+
+    const keyup = useCallback((e) => {
+        if(functionKeyDown) {
+            setFunctionKeyDown(false);
+        }
+    }, [functionKeyDown, setFunctionKeyDown]);
+
+    useEffect(() => {
+        document.addEventListener("keydown", keydown);
+        document.addEventListener("keyup", keyup);
+
+        return (() => {
+            document.removeEventListener("keydown", keydown);
+            document.removeEventListener("keyup", keyup);
+        });
+    }, [keydown, keyup]);
+}
+
 const VideoProgress = ({
     VideoFrameRef = null,
     videoRef = null,
-    loadStart = false
+    loadStart = false,
+    functionKeyDown = false,
+    setFunctionKeyDown = null
 }) => {
     const ProgressRef = useRef();
     const ProgressFrameRef = useRef();
@@ -394,6 +445,13 @@ const VideoProgress = ({
         videoElem: videoRef.current,
         ProgressFrameElem: ProgressFrameRef.current,
         ProgressHintTimeBoxElem: ProgressHintTimeBoxRef.current
+    });
+
+    // 鍵盤操作
+    useKeyboard({
+        videoElem: videoRef.current,
+        functionKeyDown: functionKeyDown,
+        setFunctionKeyDown: setFunctionKeyDown
     });
 
     return (

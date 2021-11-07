@@ -681,6 +681,8 @@ const Video = ({
                         VideoFrameRef={VideoFrameRef}
                         videoRef={videoRef}
                         loadStart={loadStart}
+                        functionKeyDown={functionKeyDown}
+                        setFunctionKeyDown={setFunctionKeyDown}
                     ></VideoProgress>
                 </Progress>
                 <Controls>
