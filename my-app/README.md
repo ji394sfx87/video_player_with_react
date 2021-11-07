@@ -4,8 +4,8 @@
 
 # 安裝指令
 
-1. develop: yarn start
-2. build: yarn build
+1. develop: `yarn start`
+2. build: `yarn build`
 
 # 開發方式
 
@@ -16,6 +16,14 @@
 
 1. styled-components
 2. classnames
+
+# 元件拆分
+
+1. Video: 播放器主體
+2. VideoPictureInPicture: 子母畫面功能按鈕
+3. VideoProgress: 影片時間軸
+4. VideoTimer: 影片播放時間
+5. VideoVolume: 影片音量功能按鈕
 
 # 影片播放器功能說明
 
