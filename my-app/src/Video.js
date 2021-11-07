@@ -488,6 +488,8 @@ const useFullScreen = ({
 const useVideoKeyboard = ({
     videoElem = null,
     playStatus = false,
+    fullScreenStatus = false,
+    setFullScreenStatus = null,
     setFunctionKeyDown = null
 }) => {
     const keydownWithPlay = useCallback(() => {
@@ -500,14 +502,20 @@ const useVideoKeyboard = ({
         }
     }, [videoElem, playStatus]);
 
+    const keydownWithFullScreen = useCallback(() => {
+        setFullScreenStatus(!fullScreenStatus);
+    }, [fullScreenStatus, setFullScreenStatus]);
+
     const keydown = useCallback((e) => {
         if(e.code === "KeyK" || e.code === "Space") {
             keydownWithPlay();
+        } else if(e.code === "KeyF") {
+            keydownWithFullScreen();
         }
         if(setFunctionKeyDown) {
             setFunctionKeyDown(true);
         }
-    }, [keydownWithPlay, setFunctionKeyDown]);
+    }, [keydownWithPlay, setFunctionKeyDown, keydownWithFullScreen]);
 
     const keyup = useCallback((e) => {
         if(setFunctionKeyDown) {
@@ -603,7 +611,11 @@ const Video = ({
     });
 
     // 全螢幕控制
-    const {fullScreenStatus, handleFullScreen} = useFullScreen({
+    const {
+        fullScreenStatus,
+        setFullScreenStatus,
+        handleFullScreen
+    } = useFullScreen({
         VideoFrameElem: VideoFrameRef.current,
         videoFullScreenElem: videoFullScreenRef.current
     });
@@ -612,6 +624,8 @@ const Video = ({
     useVideoKeyboard({
         videoElem: videoRef.current,
         playStatus: playStatus,
+        fullScreenStatus: fullScreenStatus,
+        setFullScreenStatus: setFullScreenStatus,
         setFunctionKeyDown: setFunctionKeyDown
     });
 
@@ -715,7 +729,7 @@ const Video = ({
                         </Button>
                         <Button
                             ref={videoFullScreenRef}
-                            title={fullScreenStatus ? '結束全螢幕' : '全螢幕'}
+                            title={fullScreenStatus ? '結束全螢幕(F)' : '全螢幕(F)'}
                             onClick={handleFullScreen}
                         >
                             {!fullScreenStatus &&
