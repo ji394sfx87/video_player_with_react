@@ -83,8 +83,9 @@ const VideoControl = styled.div`
     bottom: 0;
     left: 0;
     display: block;
+    padding-top: 10px;
     width: 100%;
-    background: linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0));
+    background: linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0.2));
 `
 
 const VideoReplayButton = styled.div`
@@ -164,6 +165,7 @@ const VideoFrame = styled.div`
         height: 100%;
         max-width: 100%;
         max-height: 100%;
+        object-fit: cover;
 
         &::-webkit-media-controls {
             display: none;
