@@ -87,6 +87,49 @@ const VideoControl = styled.div`
     background: linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0));
 `
 
+const VideoReplayButton = styled.div`
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    height: 100px;
+    color: #fff;
+    cursor: pointer;
+
+    &:hover {
+        svg {
+            transform: scale(1.2);
+        }
+    }
+
+    svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        transition: transform .3s;
+    }
+`
+
+const VideoReplay = styled.div`
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    opacity: 0;
+    pointer-events: none;
+
+    &.-show {
+        opacity: 1;
+        pointer-events: all;
+    }
+`
+
 const VideoFrame = styled.div`
     position: relative;
     display: flex;
@@ -172,6 +215,7 @@ const useVideoPlayStatus = ({
     setControlShow = null
 }) => {
     const [playStatus, setPlayStatus] = useState(false);
+    const [endStatus, setEndStatus] = useState(false);
     
     const handleSwitchButton = useCallback((e) => {
         if (videoElem.paused || videoElem.ended) {
@@ -186,25 +230,42 @@ const useVideoPlayStatus = ({
 
     const handleVideoEnded = useCallback((e) => {
         setPlayStatus(false);
+        setEndStatus(true);
         setControlShow(true);
     }, [setControlShow])
 
     const handleVideoPlay = useCallback(() => {
         setPlayStatus(true);
+        setEndStatus(false);
     }, []);
 
     const handleVideoPause = useCallback(() => {
         setPlayStatus(false);
+        setEndStatus(false);
         setControlShow(true);
     }, [setControlShow]);
+
+    const playButtonTitle = useMemo(() => {
+        let title = "";
+        if(playStatus && !endStatus) {
+            title = "暫停";
+        } else if(!playStatus && !endStatus) {
+            title = "播放";
+        } else {
+            title = "重播";
+        }
+        return title;
+    }, [playStatus, endStatus]);
 
     return {
         playStatus,
         setPlayStatus,
+        endStatus,
         handleSwitchButton,
         handleVideoEnded,
         handleVideoPlay,
-        handleVideoPause
+        handleVideoPause,
+        playButtonTitle
     }
 }
 
@@ -431,10 +492,12 @@ const Video = ({
     // 播放器播放控制
     const {
         playStatus,
+        endStatus,
         handleSwitchButton,
         handleVideoEnded,
         handleVideoPlay,
-        handleVideoPause
+        handleVideoPause,
+        playButtonTitle
     } = useVideoPlayStatus({
         videoElem: videoRef.current,
         setControlShow: setControlShow
@@ -513,6 +576,20 @@ const Video = ({
                 <source src={src} type="video/mp4" />
                 Your browser does not support HTML video.
             </video>
+            <VideoReplay
+                className={classNames({
+                    "-show": !playStatus && endStatus
+                })}
+            >
+                <VideoReplayButton
+                    title="再看一次"
+                    onClick={handleSwitchButton}
+                >
+                    <svg viewBox="0 0 36 36">
+                        <path d="M 18,11 V 7 l -5,5 5,5 v -4 c 3.3,0 6,2.7 6,6 0,3.3 -2.7,6 -6,6 -3.3,0 -6,-2.7 -6,-6 h -2 c 0,4.4 3.6,8 8,8 4.4,0 8,-3.6 8,-8 0,-4.4 -3.6,-8 -8,-8 z" fill="currentColor"></path>
+                    </svg>
+                </VideoReplayButton>
+            </VideoReplay>
             <VideoControl
                 ref={videoControlRef}
                 onMouseEnter={handleMouseEnterVideoControl}
@@ -529,17 +606,22 @@ const Video = ({
                 <Controls>
                     <ControlsLeft>
                         <Button
-                            title={playStatus ? '暫停' : '播放'}
+                            title={playButtonTitle}
                             onClick={handleSwitchButton}
                         >
-                            {playStatus &&
+                            {playStatus && !endStatus &&
                                 <svg viewBox="0 0 36 36">
                                     <path d="M 12,26 16,26 16,10 12,10 z M 21,26 25,26 25,10 21,10 z" fill="currentColor"></path>
                                 </svg>
                             }
-                            {!playStatus &&
+                            {!playStatus && !endStatus &&
                                 <svg viewBox="0 0 36 36">
                                     <path d="M 12,26 18.5,22 18.5,14 12,10 z M 18.5,22 25,18 25,18 18.5,14 z" fill="currentColor"></path>
+                                </svg>
+                            }
+                            {!playStatus && endStatus &&
+                                <svg viewBox="0 0 36 36">
+                                    <path d="M 18,11 V 7 l -5,5 5,5 v -4 c 3.3,0 6,2.7 6,6 0,3.3 -2.7,6 -6,6 -3.3,0 -6,-2.7 -6,-6 h -2 c 0,4.4 3.6,8 8,8 4.4,0 8,-3.6 8,-8 0,-4.4 -3.6,-8 -8,-8 z" fill="currentColor"></path>
                                 </svg>
                             }
                         </Button>
