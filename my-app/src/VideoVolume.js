@@ -224,6 +224,52 @@ const useMouse = ({
     }
 }
 
+// 鍵盤操作
+const useKeyboard = ({
+    videoElem = null,
+    volume = 0,
+    setVolume = null,
+    muteStatus = false,
+    setMuteStatus = null
+}) => {
+    const keydownWithMute = useCallback(() => {
+        setMuteStatus(!muteStatus);
+    }, [muteStatus, setMuteStatus]);
+
+    const keydownWithVolumeChange = useCallback((type) => {
+        let fixVolume = 0.1;
+        if(type === "minus") {
+            fixVolume = -0.1;
+        }
+        let newVolume = volume + fixVolume;
+        if(newVolume >= 0 && newVolume <= 1) {
+            setVolume(newVolume);
+        } else if(newVolume < 0) {
+            setVolume(0);
+        } else {
+            setVolume(1);
+        }
+    }, [volume, setVolume]);
+
+    const keydown = useCallback((e) => {
+        if(e.code === "KeyM") {
+            keydownWithMute();
+        } else if(e.code === "ArrowUp") {
+            keydownWithVolumeChange("plus");
+        } else if(e.code === "ArrowDown") {
+            keydownWithVolumeChange("minus");
+        }
+    }, [keydownWithMute, keydownWithVolumeChange]);
+
+    useEffect(() => {
+        document.addEventListener("keydown", keydown);
+
+        return (() => {
+            document.removeEventListener("keydown", keydown);
+        });
+    }, [keydown]);
+}
+
 const VideoVolume = ({
     videoRef = null
 }) => {
@@ -252,6 +298,14 @@ const VideoVolume = ({
         VolumeBarElem: VolumeBarRef.current,
         VolumeValueElem: VolumeValueRef.current,
         VolumeDotElem: VolumeDotRef.current,
+        volume: volume,
+        setVolume: setVolume,
+        muteStatus: muteStatus,
+        setMuteStatus: setMuteStatus
+    });
+
+    // 鍵盤操作
+    useKeyboard({
         volume: volume,
         setVolume: setVolume,
         muteStatus: muteStatus,

@@ -478,7 +478,7 @@ const useVideoKeyboard = ({
     videoElem = null,
     playStatus = false
 }) => {
-    const keydownWidthPlay = useCallback(() => {
+    const keydownWithPlay = useCallback(() => {
         if(videoElem) {
             if(!playStatus) {
                 videoElem.play();
@@ -489,11 +489,10 @@ const useVideoKeyboard = ({
     }, [videoElem, playStatus]);
 
     const keydown = useCallback((e) => {
-        console.log(e.code);
         if(e.code === "KeyK" || e.code === "Space") {
-            keydownWidthPlay();
+            keydownWithPlay();
         }
-    }, [keydownWidthPlay]);
+    }, [keydownWithPlay]);
 
     useEffect(() => {
         document.addEventListener("keydown", keydown);
@@ -580,6 +579,7 @@ const Video = ({
         videoFullScreenElem: videoFullScreenRef.current
     });
 
+    // 鍵盤操作
     useVideoKeyboard({
         videoElem: videoRef.current,
         playStatus: playStatus
