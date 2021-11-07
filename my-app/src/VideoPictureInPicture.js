@@ -61,23 +61,69 @@ const usePictureInPicture = ({
 
     return {
         picInPicStatus,
+        setPicInPicStatus,
         handleClick
     }
 }
 
+// 鍵盤操作
+const useKeyboard = ({
+    picInPicStatus = false,
+    setPicInPicStatus = null,
+    functionKeyDown = false,
+    setFunctionKeyDown = null
+}) => {
+    const keydownWithPicInPic = useCallback(() => {
+        setPicInPicStatus(!picInPicStatus);
+    }, [picInPicStatus, setPicInPicStatus]);
+
+    const keydown = useCallback((e) => {
+        if(e.code === "KeyI") {
+            keydownWithPicInPic();
+        }
+    }, [keydownWithPicInPic]);
+
+    const keyup = useCallback((e) => {
+        if(functionKeyDown) {
+            setFunctionKeyDown(false);
+        }
+    }, [functionKeyDown, setFunctionKeyDown]);
+
+    useEffect(() => {
+        document.addEventListener("keydown", keydown);
+        document.addEventListener("keyup", keyup);
+
+        return (() => {
+            document.removeEventListener("keydown", keydown);
+            document.removeEventListener("keyup", keyup);
+        });
+    }, [keydown, keyup]);
+}
+
 const VideoPictureInPicture = ({
-    videoRef = null
+    videoRef = null,
+    functionKeyDown = false,
+    setFunctionKeyDown = null
 }) => {
     const {
         picInPicStatus,
+        setPicInPicStatus,
         handleClick
     } = usePictureInPicture({
         videoElem: videoRef.current
     });
 
+    // 鍵盤操作
+    useKeyboard({
+        picInPicStatus: picInPicStatus,
+        setPicInPicStatus: setPicInPicStatus,
+        functionKeyDown: functionKeyDown,
+        setFunctionKeyDown: setFunctionKeyDown
+    });
+
     return (
         <PictureInPicture
-            title={picInPicStatus ? "關閉子母畫面" : "子母畫面"}
+            title={picInPicStatus ? "關閉子母畫面(I)" : "子母畫面(I)"}
             onClick={handleClick}
         >
             <svg viewBox="0 0 36 36">

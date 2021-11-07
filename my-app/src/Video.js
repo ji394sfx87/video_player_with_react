@@ -709,6 +709,8 @@ const Video = ({
                         <Button>
                             <VideoPictureInPicture
                                 videoRef={videoRef}
+                                functionKeyDown={functionKeyDown}
+                                setFunctionKeyDown={setFunctionKeyDown}
                             ></VideoPictureInPicture>
                         </Button>
                         <Button
