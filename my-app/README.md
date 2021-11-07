@@ -1,3 +1,22 @@
+# Demo
+
+網址：[https://vibrant-spence-db9ef3.netlify.app/](https://vibrant-spence-db9ef3.netlify.app/)
+
+# 安裝指令
+
+1. develop: yarn start
+2. build: yarn build
+
+# 開發方式
+
+1. 使用 React APP 開發
+2. 採用 function component 開發
+
+# 使用套件
+
+1. styled-components
+2. classnames
+
 # 影片播放器功能說明
 
 1. 播放、暫停功能。(快捷鍵：K)
