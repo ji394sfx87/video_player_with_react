@@ -69,9 +69,11 @@ const useTimer = ({
     }, [videoElem, getTimeString]);
 
     useEffect(() => {
-        if(videoElem) {
+        if(videoElem && videoElem.duration) {
             const timeFormat = getTimeString(videoElem.duration);
             setDurationTime(timeFormat);
+        } else {
+            setDurationTime(getTimeString(0));
         }
     }, [videoElem, loadStart, getTimeString]);
 
@@ -90,8 +92,10 @@ const useTimer = ({
     useEffect((e) => {
         if(loadStart) {
             timeupdate();
+        } else {
+            setCurrentTime(getTimeString(0));
         }
-    }, [loadStart, timeupdate]);
+    }, [loadStart, timeupdate, getTimeString]);
 
     return {
         currentTime,
