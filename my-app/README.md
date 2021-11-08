@@ -10,7 +10,7 @@
 # 開發方式
 
 1. 使用 React APP 開發
-2. 採用 function component 開發
+2. 採用 function component 及 React Hook 開發
 
 # 使用套件
 
